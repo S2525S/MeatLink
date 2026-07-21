@@ -1,4 +1,1 @@
-productCode,productName,displayName,defaultUnit
-P001,牛タン,牛タン,kg
-P002,牛ハラミ,牛ハラミ,kg
-P003,ミノ,ミノ,kg
+window.MEATLINK_DEFAULTS={MEATLINK_ORDER_URL:'https://s2525s.github.io/meatflow-liff/',AI_API_URL:''};

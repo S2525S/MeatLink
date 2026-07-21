@@ -1,0 +1,30 @@
+# MeatLink v1.0 設定手順
+
+## 1. GitHub Pages
+このZIPを展開し、`MeatLink_v1.0_formal` フォルダの**中身**をGitHubリポジトリ `MeatLink` のルートへアップロードします。
+
+公開後の入口:
+- `https://s2525s.github.io/MeatLink/`
+- AI受注: `https://s2525s.github.io/MeatLink/ai/`
+- Order: `https://s2525s.github.io/MeatLink/order/`
+
+## 2. MeatLink API
+1. Google Apps Scriptで新規プロジェクトを作成し、名前を `MeatLink API` にする。
+2. `api/MeatLink_API.gs` を貼り付ける。
+3. スクリプトプロパティに `GEMINI_API_KEY` を登録する。
+4. ウェブアプリとしてデプロイし、`/exec` URLを控える。
+5. MeatLink AIの「設定」からAI解析API URLへ保存する。
+
+## 3. 商品マスター
+AI画面の設定から `ai/product-master-sample.csv` を読み込み、動作確認します。
+本番CSV列は以下です。
+
+`productCode,productName,displayName,defaultUnit`
+
+## 4. Order連携
+`order/MeatLink_Order_receiver_patch.js` は既存注文本体へAI候補を受け取るための参考コードです。本体側の変数名・初期化順に合わせて統合してください。
+
+## 注意
+- AIは注文を自動確定しません。
+- APIキーをGitHubへ直接書かないでください。
+- 既存の注文本体は、動作確認が完了するまで削除・上書きしません。

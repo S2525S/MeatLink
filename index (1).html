@@ -1,0 +1,24 @@
+/** MeatLink AI用：OCR後の文字だけGeminiへ送る高速JSONP API */
+const MEATLINK_AI_MODEL='gemini-3.1-flash-lite';
+function doGet(e){
+  const p=e.parameter||{},cb=String(p.callback||'callback');
+  try{
+    if(!/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(cb))throw new Error('callbackが不正です。');
+    if(p.action!=='parseText')throw new Error('actionが不正です。');
+    const text=String(p.text||'').slice(0,12000); if(!text)throw new Error('注文文が空です。');
+    return jsonp_(cb,{ok:true,parsed:parseText_(text)});
+  }catch(err){return jsonp_(cb,{ok:false,error:err.message||String(err)});}
+}
+function parseText_(text){
+  const key=PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if(!key)throw new Error('GEMINI_API_KEYが未設定です。');
+  const today=Utilities.formatDate(new Date(),'Asia/Tokyo','yyyy-MM-dd');
+  const prompt=`あなたは食肉卸の受注入力補助です。OCR文字から注文だけを抽出し、JSONのみ返してください。会社情報や住所電話は無視。手書きらしい数量を優先。不明は空文字または0。基準日:${today}\n出力:{"customerName":"","deliveryDate":"","deliveryCondition":"","receiveMethod":"","preferredTime":"","orderNote":"","items":[{"productName":"","quantity":0,"unit":"","note":""}],"warnings":[]}\nOCR:\n${text}`;
+  const url='https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(MEATLINK_AI_MODEL)+':generateContent';
+  const res=UrlFetchApp.fetch(url,{method:'post',contentType:'application/json',headers:{'x-goog-api-key':key},payload:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0,responseMimeType:'application/json',maxOutputTokens:900,thinkingConfig:{thinkingLevel:'minimal',includeThoughts:false}}}),muteHttpExceptions:true});
+  if(res.getResponseCode()<200||res.getResponseCode()>=300)throw new Error('Gemini APIエラー '+res.getResponseCode()+': '+res.getContentText().slice(0,300));
+  const d=JSON.parse(res.getContentText()),t=d.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('')||'';
+  if(!t)throw new Error('AI解析結果が空です。'); return JSON.parse(t.replace(/^```json\s*/,'').replace(/\s*```$/,''));
+}
+function jsonp_(cb,data){return ContentService.createTextOutput(cb+'('+JSON.stringify(data)+');').setMimeType(ContentService.MimeType.JAVASCRIPT);}
+function testGemini(){return parseText_('明日 牛タン 2kg 午前中希望');}

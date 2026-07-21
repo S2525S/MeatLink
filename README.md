@@ -1,55 +1,47 @@
-# MeatLink v2.0
+# MeatLink v2.2 完成版
 
-## このZIPでできること
-- MeatLinkトップ
-- MeatLink Order
-  - 得意先、納品日、商品、数量入力
-  - AI画面から注文候補を受け取り
-  - Apps Script APIへ注文送信
-- MeatLink AI
-  - 画像OCR（Tesseract.js）
-  - PDF文字抽出、画像PDFの1ページ目OCR
-  - 文章入力
-  - API未設定時の簡易解析
-  - Gemini APIを使った構造化解析
-  - 商品マスターCSV読込
-- Apps Script
-  - Gemini解析
-  - 注文履歴をスプレッドシートへ保存
+## 今回の修正
+- Order画面にAPI URL設定欄を追加
+- AIから渡された注文候補をOrderへ自動入力
+- OrderからApps Scriptへ注文送信
+- SPREADSHEET_ID設定済みなら「注文履歴」シートへ保存
+- Apps Scriptの doGet / doPost を整理し直し
 
-## 最短の設置手順
-1. ZIPを展開。
-2. GitHubの MeatLink リポジトリで「Add file」→「Upload files」。
-3. ZIP内の `index.html`、`order`、`ai` をドラッグして上書きし、Commit changes。
-4. GitHub Pagesの反映を待ち、以下を確認。
-   - `/MeatLink/`
-   - `/MeatLink/order/`
-   - `/MeatLink/ai/`
+## GitHub更新
+1. ZIPを展開
+2. GitHubの MeatLink リポジトリで Add file → Upload files
+3. ZIP内の以下をアップロードして上書き
+   - index.html
+   - ai/index.html
+   - order/index.html
+   - api/MeatLink_API.gs
+   - README.md
+   - product-master-sample.csv
+   - .nojekyll
+4. Commit changes
+5. GitHub Pages反映後に Ctrl + F5
 
-## Apps Script設定
-1. 新しいApps Scriptプロジェクトを作成。
-2. `api/MeatLink_API.gs` の内容を貼り付け。
-3. プロジェクトの設定 → スクリプト プロパティ:
-   - `GEMINI_API_KEY`: Google AI Studioで発行したキー
-   - `GEMINI_MODEL`: `gemini-2.5-flash`（省略可）
-   - `SPREADSHEET_ID`: 注文保存先スプレッドシートID（省略可）
-4. デプロイ → 新しいデプロイ → ウェブアプリ。
-   - 実行するユーザー: 自分
-   - アクセスできるユーザー: 全員
-5. 発行URLをMeatLink AIの「MeatLink API URL」へ貼り付け、保存。
-6. 同じURLはブラウザのlocalStorageに保存されるため、Order画面でも利用されます。
+## Apps Script更新
+1. `api/MeatLink_API.gs` の内容でApps Scriptのコードを全置換
+2. 保存
+3. デプロイ → デプロイを管理 → 編集
+4. 「新バージョン」を選んでデプロイ
+5. ウェブアプリURLは同じものを使えます
 
-## 商品マスターCSV
-列名:
-`code,name,unit,price`
+## スクリプトプロパティ
+- GEMINI_API_KEY: 既に設定したGemini APIキー
+- GEMINI_MODEL: gemini-2.5-flash（任意）
+- SPREADSHEET_ID: 注文保存先GoogleスプレッドシートID
+
+スプレッドシートIDはURLの `/d/` と `/edit` の間です。
 
 例:
-`P001,和牛ロース,kg,5000`
+`https://docs.google.com/spreadsheets/d/ここがID/edit`
 
-日本語列名 `商品CD,商品名,単位,価格` でも読み込めます。
-
-## 注意
-- OCRは端末内ブラウザで実行するため、初回はライブラリ読込に時間がかかります。
-- PDFは先頭5ページの文字を抽出します。画像PDFは先頭1ページをOCRします。
-- Gemini APIキーはGitHubへ書かず、Apps Scriptのスクリプトプロパティに保存してください。
-- AI結果は必ず人が確認してから注文送信してください。
+## 最終テスト
+1. AI画面で文章または画像を解析
+2. MeatLink Orderへ送る
+3. Order画面下部のAPI設定にApps Script URLを保存
+4. 得意先名を入力
+5. 注文を送信
+6. 「注文履歴」シートに行が追加されれば完成

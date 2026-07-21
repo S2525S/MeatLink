@@ -1,105 +1,108 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MeatLink Order</title>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: #f3f6f5;
-      color: #17372e;
-    }
-
-    header {
-      padding: 24px 16px;
-      text-align: center;
-      color: #fff;
-      background: #176b52;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 30px;
-    }
-
-    header p {
-      margin: 8px 0 0;
-    }
-
-    main {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 32px 18px;
-    }
-
-    .card {
-      padding: 28px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 6px 22px rgba(0, 0, 0, .08);
-    }
-
-    .button {
-      display: block;
-      width: 100%;
-      margin-top: 22px;
-      padding: 17px;
-      border: 0;
-      border-radius: 10px;
-      color: #fff;
-      background: #176b52;
-      font-size: 18px;
-      font-weight: 700;
-      text-align: center;
-      text-decoration: none;
-    }
-
-    .back {
-      display: block;
-      margin-top: 18px;
-      color: #176b52;
-      text-align: center;
-    }
-
-    .note {
-      margin-top: 18px;
-      color: #65756f;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-  </style>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MeatLink Order</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f6f5;color:#17372e}
+header{background:#176b52;color:white;padding:20px;text-align:center}.wrap{max-width:900px;margin:auto;padding:20px}
+.card{background:white;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 16px #0001}
+label{display:block;font-weight:700;margin:12px 0 6px}input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cfd8d5;border-radius:8px}
+.grid{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end}
+button{border:0;border-radius:9px;padding:12px 16px;cursor:pointer}.primary{background:#176b52;color:white;font-weight:700}
+.secondary{background:#e8efed}.danger{background:#fff0f0;color:#a00}.row{border-top:1px solid #eee;padding:12px 0}
+.total{text-align:right;font-size:20px;font-weight:700}.status{padding:12px;border-radius:8px;margin-top:12px;display:none}
+.ok{display:block;background:#e7f7ef;color:#175d43}.error{display:block;background:#fff0f0;color:#8b1a1a}
+@media(max-width:650px){.grid{grid-template-columns:1fr 1fr}.grid .wide{grid-column:1/-1}}
+</style>
 </head>
-
 <body>
-  <header>
-    <h1>MeatLink Order</h1>
-    <p>LINE発注・注文受付</p>
-  </header>
+<header><h1>MeatLink Order</h1><p>注文入力・確認・送信</p></header>
+<div class="wrap">
+  <section class="card">
+    <label>得意先名</label><input id="customer" placeholder="例：〇〇食堂">
+    <label>希望納品日</label><input id="deliveryDate" type="date">
+    <label>備考</label><textarea id="note" rows="2"></textarea>
+  </section>
 
-  <main>
-    <section class="card">
-      <h2>注文を開始</h2>
-      <p>商品選択、数量入力、注文送信を行います。</p>
+  <section class="card">
+    <h2>商品追加</h2>
+    <div class="grid">
+      <div class="wide"><label>商品</label><select id="product"></select></div>
+      <div><label>数量</label><input id="qty" type="number" min="0.01" step="0.01" value="1"></div>
+      <div><label>単位</label><input id="unit" value="kg"></div>
+      <button class="primary" id="addBtn">追加</button>
+    </div>
+  </section>
 
-      <a
-        class="button"
-        href="https://s2525s.github.io/meatflow-liff/"
-      >
-        注文画面を開く
-      </a>
+  <section class="card">
+    <h2>注文内容</h2>
+    <div id="items"></div>
+    <div class="total" id="total"></div>
+    <button class="primary" id="submitBtn" style="width:100%;margin-top:15px">注文を送信</button>
+    <div id="status" class="status"></div>
+  </section>
 
-      <p class="note">
-        現在稼働している注文システムを、MeatLink Orderから利用します。
-      </p>
+  <p><a href="../">← MeatLinkトップへ戻る</a></p>
+</div>
+<script>
+const CONFIG={apiUrl:localStorage.getItem("meatlink_api_url")||""};
+const sampleProducts=[
+ {code:"P001",name:"和牛ロース",unit:"kg",price:5000},
+ {code:"P002",name:"和牛モモ",unit:"kg",price:3800},
+ {code:"P003",name:"豚バラ",unit:"kg",price:1600},
+ {code:"P004",name:"鶏モモ",unit:"kg",price:900}
+];
+let products=JSON.parse(localStorage.getItem("meatlink_products")||"null")||sampleProducts;
+let order={customer:"",deliveryDate:"",note:"",items:[]};
 
-      <a class="back" href="../">MeatLinkトップへ戻る</a>
-    </section>
-  </main>
+function el(id){return document.getElementById(id)}
+function save(){localStorage.setItem("meatlink_current_order",JSON.stringify(order))}
+function money(n){return new Intl.NumberFormat("ja-JP",{style:"currency",currency:"JPY"}).format(n||0)}
+function loadDraft(){
+ const draft=JSON.parse(localStorage.getItem("meatlink_order_draft")||"null");
+ if(draft){
+   order={customer:draft.customer||"",deliveryDate:draft.deliveryDate||"",note:draft.note||"",items:Array.isArray(draft.items)?draft.items:[]};
+   localStorage.removeItem("meatlink_order_draft");
+ } else {
+   order=JSON.parse(localStorage.getItem("meatlink_current_order")||"null")||order;
+ }
+ el("customer").value=order.customer||"";el("deliveryDate").value=order.deliveryDate||"";el("note").value=order.note||"";
+}
+function renderProducts(){
+ el("product").innerHTML=products.map((p,i)=>`<option value="${i}">${p.code}｜${p.name}（${p.unit}）</option>`).join("");
+ const p=products[0]; if(p) el("unit").value=p.unit||"kg";
+}
+function render(){
+ const box=el("items");
+ if(!order.items.length){box.innerHTML="<p>商品はまだありません。</p>";el("total").textContent="";save();return}
+ box.innerHTML=order.items.map((x,i)=>`<div class="row"><b>${x.name}</b><br>${x.qty} ${x.unit} × ${money(x.price)} <button class="danger" onclick="removeItem(${i})">削除</button></div>`).join("");
+ const sum=order.items.reduce((s,x)=>s+(Number(x.qty)||0)*(Number(x.price)||0),0);
+ el("total").textContent="概算合計 "+money(sum);save();
+}
+window.removeItem=i=>{order.items.splice(i,1);render()}
+el("product").addEventListener("change",e=>{const p=products[Number(e.target.value)];if(p)el("unit").value=p.unit||"kg"});
+el("addBtn").onclick=()=>{
+ const p=products[Number(el("product").value)],qty=Number(el("qty").value);
+ if(!p||!qty)return;
+ order.items.push({code:p.code,name:p.name,qty,unit:el("unit").value||p.unit,price:Number(p.price)||0});
+ render();
+};
+["customer","deliveryDate","note"].forEach(id=>el(id).addEventListener("input",()=>{order[id]=el(id).value;save()}));
+el("submitBtn").onclick=async()=>{
+ order.customer=el("customer").value.trim();order.deliveryDate=el("deliveryDate").value;order.note=el("note").value.trim();
+ const st=el("status");st.className="status";st.textContent="";
+ if(!order.customer||!order.items.length){st.className="status error";st.textContent="得意先名と商品を入力してください。";return}
+ if(!CONFIG.apiUrl){st.className="status ok";st.textContent="注文データを端末に保存しました。API URL設定後はスプレッドシートへ送信できます。";save();return}
+ try{
+  const r=await fetch(CONFIG.apiUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"submitOrder",order})});
+  const data=await r.json(); if(!data.ok)throw new Error(data.error||"送信失敗");
+  st.className="status ok";st.textContent="注文を送信しました。受付番号："+data.orderId;
+  order={customer:"",deliveryDate:"",note:"",items:[]};localStorage.removeItem("meatlink_current_order");loadDraft();render();
+ }catch(e){st.className="status error";st.textContent=e.message}
+};
+renderProducts();loadDraft();render();
+</script>
 </body>
 </html>

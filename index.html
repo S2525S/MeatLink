@@ -2,105 +2,26 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>MeatLink</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: #f4f7f6;
-      color: #18352d;
-    }
-
-    header {
-      background: #176b52;
-      color: white;
-      padding: 22px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 30px;
-    }
-
-    header p {
-      margin: 6px 0 0;
-      opacity: 0.9;
-    }
-
-    main {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 32px 18px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 18px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    .card h2 {
-      margin-top: 0;
-    }
-
-    .button {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      margin-top: 14px;
-      border-radius: 10px;
-      background: #176b52;
-      color: white;
-      text-decoration: none;
-      text-align: center;
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .button.secondary {
-      background: #d97918;
-    }
-
-    footer {
-      text-align: center;
-      padding: 20px;
-      color: #60736d;
-      font-size: 13px;
-    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f3f6f5;color:#17372e}
+    header{background:#176b52;color:#fff;padding:28px 18px;text-align:center}
+    header h1{margin:0;font-size:32px} header p{margin:8px 0 0}
+    main{max-width:760px;margin:auto;padding:30px 18px}
+    .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 6px 20px #00000012}
+    .btn{display:block;padding:16px;border-radius:10px;color:#fff;text-decoration:none;text-align:center;font-weight:700;font-size:18px}
+    .order{background:#176b52}.ai{background:#d97706}
+    footer{text-align:center;color:#65756f;padding:18px}
   </style>
 </head>
-
 <body>
-  <header>
-    <h1>MeatLink</h1>
-    <p>食肉卸業務・受注管理システム</p>
-  </header>
-
-  <main>
-    <section class="card">
-      <h2>MeatLink Order</h2>
-      <p>商品を選択して発注する注文画面です。</p>
-      <a class="button" href="./order/">注文画面を開く</a>
-    </section>
-
-    <section class="card">
-      <h2>MeatLink AI</h2>
-      <p>FAX画像・PDF・文章から注文内容を取り込みます。</p>
-      <a class="button secondary" href="./ai/">AI受注画面を開く</a>
-    </section>
-  </main>
-
-  <footer>
-    MeatLink v1.0
-  </footer>
+<header><h1>MeatLink</h1><p>食肉卸業務・受注管理システム</p></header>
+<main>
+  <section class="card"><h2>MeatLink Order</h2><p>商品選択、数量入力、注文送信を行います。</p><a class="btn order" href="./order/">注文画面を開く</a></section>
+  <section class="card"><h2>MeatLink AI</h2><p>画像・PDF・文章をOCRとAIで注文データへ変換します。</p><a class="btn ai" href="./ai/">AI受注画面を開く</a></section>
+</main>
+<footer>MeatLink v2.0</footer>
 </body>
 </html>

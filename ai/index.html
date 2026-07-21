@@ -1,68 +1,146 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MeatLink AI</title>
-
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
 <style>
-body{
-    font-family:sans-serif;
-    background:#f5f5f5;
-    margin:0;
-}
-header{
-    background:#d97706;
-    color:white;
-    padding:20px;
-    text-align:center;
-}
-main{
-    max-width:700px;
-    margin:30px auto;
-}
-.card{
-    background:white;
-    padding:25px;
-    border-radius:12px;
-}
-button{
-    width:100%;
-    padding:15px;
-    background:#d97706;
-    color:white;
-    border:none;
-    border-radius:8px;
-    font-size:18px;
-}
-input{
-    width:100%;
-    padding:12px;
-    margin:10px 0;
-}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f6f6f6;color:#2b2b2b}
+header{background:#d97706;color:#fff;padding:22px;text-align:center}.wrap{max-width:900px;margin:auto;padding:20px}
+.card{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 16px #0001}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tab{flex:1;padding:11px;border:0;border-radius:8px;background:#eee}.tab.active{background:#d97706;color:#fff}
+input,textarea,button{font:inherit}input[type=file],textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:8px}
+button{border:0;border-radius:9px;padding:13px;cursor:pointer}.primary{width:100%;background:#d97706;color:#fff;font-weight:700}.secondary{background:#eee}
+.preview{max-width:100%;max-height:380px;margin-top:12px;border-radius:8px}.hidden{display:none}.status{padding:12px;border-radius:8px;margin:12px 0;background:#fff3df}
+.item{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin:8px 0}.item input{width:100%;padding:9px;border:1px solid #ddd;border-radius:7px}
+@media(max-width:650px){.item{grid-template-columns:1fr 1fr}.item .name{grid-column:1/-1}}
 </style>
 </head>
-
 <body>
+<header><h1>MeatLink AI</h1><p>OCR・AI受注センター</p></header>
+<div class="wrap">
+<section class="card">
+  <div class="tabs">
+    <button class="tab active" data-tab="image">画像</button>
+    <button class="tab" data-tab="pdf">PDF</button>
+    <button class="tab" data-tab="text">文章</button>
+  </div>
+  <div id="imagePane"><input id="imageFile" type="file" accept="image/*"><img id="preview" class="preview hidden"></div>
+  <div id="pdfPane" class="hidden"><input id="pdfFile" type="file" accept="application/pdf"></div>
+  <div id="textPane" class="hidden"><textarea id="manualText" rows="8" placeholder="例：明日、和牛ロース2kg、豚バラ3kgお願いします。"></textarea></div>
+  <button id="analyzeBtn" class="primary" style="margin-top:14px">OCR・AI解析開始</button>
+  <div id="status" class="status hidden"></div>
+</section>
 
-<header>
-<h1>MeatLink AI</h1>
-<p>AI受注センター</p>
-</header>
+<section class="card">
+  <h2>読み取り文字</h2>
+  <textarea id="ocrText" rows="9" placeholder="OCR結果がここに表示されます。手修正できます。"></textarea>
+  <button id="aiOnlyBtn" class="secondary" style="width:100%;margin-top:10px">この文章をAI解析</button>
+</section>
 
-<main>
+<section class="card">
+  <h2>注文候補</h2>
+  <label>得意先名</label><input id="customer" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px">
+  <label>希望納品日</label><input id="deliveryDate" type="date" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px">
+  <div id="items"></div>
+  <button id="addItem" class="secondary">＋ 商品追加</button>
+  <button id="sendOrder" class="primary" style="margin-top:14px">MeatLink Orderへ送る</button>
+</section>
 
-<div class="card">
-
-<h2>FAX・PDF・画像解析</h2>
-
-<input type="file">
-
-<button>AI解析開始</button>
-
+<section class="card">
+  <h2>設定</h2>
+  <label>MeatLink API URL</label>
+  <input id="apiUrl" placeholder="Apps ScriptウェブアプリURL" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px">
+  <label>商品マスターCSV</label>
+  <input id="csvFile" type="file" accept=".csv,text/csv">
+  <button id="saveSettings" class="secondary" style="width:100%;margin-top:10px">設定を保存</button>
+</section>
+<p><a href="../">← MeatLinkトップへ戻る</a></p>
 </div>
+<script type="module">
+const $=id=>document.getElementById(id);
+let mode="image",items=[],products=JSON.parse(localStorage.getItem("meatlink_products")||"[]");
+const apiUrl=localStorage.getItem("meatlink_api_url")||"";$("apiUrl").value=apiUrl;
 
-</main>
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+ mode=b.dataset.tab;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));
+ ["image","pdf","text"].forEach(x=>$(x+"Pane").classList.toggle("hidden",x!==mode));
+});
+$("imageFile").onchange=e=>{const f=e.target.files[0];if(f){$("preview").src=URL.createObjectURL(f);$("preview").classList.remove("hidden")}};
+function status(t){$("status").textContent=t;$("status").classList.remove("hidden")}
+function addRow(x={name:"",qty:1,unit:"kg",code:""}){items.push(x);renderItems()}
+function renderItems(){
+ $("items").innerHTML=items.map((x,i)=>`<div class="item">
+ <input class="name" data-i="${i}" data-k="name" value="${escapeHtml(x.name||"")}" placeholder="商品名">
+ <input data-i="${i}" data-k="qty" type="number" step="0.01" value="${x.qty||1}" placeholder="数量">
+ <input data-i="${i}" data-k="unit" value="${escapeHtml(x.unit||"kg")}" placeholder="単位">
+ <button class="secondary" data-del="${i}">削除</button></div>`).join("");
+ document.querySelectorAll("[data-i]").forEach(e=>e.oninput=()=>{const i=+e.dataset.i;items[i][e.dataset.k]=e.dataset.k==="qty"?Number(e.value):e.value});
+ document.querySelectorAll("[data-del]").forEach(e=>e.onclick=()=>{items.splice(+e.dataset.del,1);renderItems()});
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+$("addItem").onclick=()=>addRow();
 
+async function ocrImage(file){
+ status("画像をOCR解析中です…");
+ const r=await Tesseract.recognize(file,"jpn+eng",{logger:m=>{if(m.status==="recognizing text")status(`OCR解析中 ${Math.round((m.progress||0)*100)}%`)}});
+ return r.data.text||"";
+}
+async function pdfToText(file){
+ status("PDFを読み込み中です…");
+ const pdfjs=await import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs");
+ pdfjs.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+ const data=new Uint8Array(await file.arrayBuffer()),pdf=await pdfjs.getDocument({data}).promise;
+ let text="";
+ for(let p=1;p<=Math.min(pdf.numPages,5);p++){const page=await pdf.getPage(p),tc=await page.getTextContent();text+=tc.items.map(x=>x.str).join(" ")+"\n"}
+ if(text.trim())return text;
+ const page=await pdf.getPage(1),viewport=page.getViewport({scale:2}),canvas=document.createElement("canvas");
+ canvas.width=viewport.width;canvas.height=viewport.height;await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise;
+ return await ocrImage(canvas);
+}
+function localParse(text){
+ const lines=text.split(/\n|、|,|。/).map(x=>x.trim()).filter(Boolean),out=[];
+ for(const line of lines){
+  const m=line.match(/(.+?)[\s　]*(\d+(?:\.\d+)?)\s*(kg|g|個|本|枚|ケース|箱)?/i);
+  if(m){const name=m[1].replace(/^(明日|本日|今日|注文|希望)/,"").trim();if(name)out.push({name,qty:Number(m[2]),unit:m[3]||"kg"})}
+ }
+ return {customer:"",deliveryDate:"",items:out};
+}
+async function aiParse(text){
+ const url=$("apiUrl").value.trim();
+ if(!url){status("API URL未設定のため簡易解析を行いました。");return localParse(text)}
+ status("Geminiで注文内容を解析中です…");
+ const r=await fetch(url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"analyzeText",text,products})});
+ const d=await r.json();if(!d.ok)throw new Error(d.error||"AI解析に失敗しました");return d.order;
+}
+async function runParse(){
+ const text=$("ocrText").value.trim();if(!text){status("解析する文章がありません。");return}
+ try{const d=await aiParse(text);$("customer").value=d.customer||"";$("deliveryDate").value=d.deliveryDate||"";items=Array.isArray(d.items)?d.items:[];renderItems();status("解析が完了しました。内容を確認してください。")}
+ catch(e){status("エラー："+e.message)}
+}
+$("analyzeBtn").onclick=async()=>{
+ try{
+  let text="";
+  if(mode==="image"){const f=$("imageFile").files[0];if(!f)throw new Error("画像を選択してください");text=await ocrImage(f)}
+  if(mode==="pdf"){const f=$("pdfFile").files[0];if(!f)throw new Error("PDFを選択してください");text=await pdfToText(f)}
+  if(mode==="text"){text=$("manualText").value}
+  $("ocrText").value=text;await runParse();
+ }catch(e){status("エラー："+e.message)}
+};
+$("aiOnlyBtn").onclick=runParse;
+$("sendOrder").onclick=()=>{
+ const draft={customer:$("customer").value.trim(),deliveryDate:$("deliveryDate").value,note:"AI受注から作成",items};
+ localStorage.setItem("meatlink_order_draft",JSON.stringify(draft));
+ location.href="../order/";
+};
+$("saveSettings").onclick=()=>{localStorage.setItem("meatlink_api_url",$("apiUrl").value.trim());status("設定を保存しました。")};
+$("csvFile").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;const txt=await f.text(),rows=txt.replace(/^\uFEFF/,"").split(/\r?\n/).filter(Boolean);
+ const head=rows.shift().split(",").map(x=>x.trim());products=rows.map(r=>{const c=r.split(",");const o={};head.forEach((h,i)=>o[h]=c[i]?.trim()||"");return {code:o.code||o["商品CD"]||"",name:o.name||o["商品名"]||"",unit:o.unit||o["単位"]||"kg",price:Number(o.price||o["価格"]||0)}}).filter(x=>x.name);
+ localStorage.setItem("meatlink_products",JSON.stringify(products));status(`${products.length}件の商品を読み込みました。`);
+};
+renderItems();
+</script>
 </body>
 </html>

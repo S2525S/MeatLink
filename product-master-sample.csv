@@ -1,1 +1,5 @@
-window.MEATLINK_DEFAULTS={MEATLINK_ORDER_URL:'https://s2525s.github.io/meatflow-liff/',AI_API_URL:''};
+﻿code,name,unit,price
+P001,和牛ロース,kg,5000
+P002,和牛モモ,kg,3800
+P003,豚バラ,kg,1600
+P004,鶏モモ,kg,900

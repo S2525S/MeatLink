@@ -130,9 +130,26 @@ $("analyzeBtn").onclick=async()=>{
 };
 $("aiOnlyBtn").onclick=runParse;
 $("sendOrder").onclick=()=>{
- const draft={customer:$("customer").value.trim(),deliveryDate:$("deliveryDate").value,note:"AI受注から作成",items};
- localStorage.setItem("meatlink_order_draft",JSON.stringify(draft));
- location.href="../order/";
+ const draft={
+   customer:$("customer").value.trim(),
+   deliveryDate:$("deliveryDate").value,
+   deliveryCondition:"",
+   receiveMethod:"",
+   preferredTime:"",
+   orderNote:"MeatLink AIから取り込み",
+   items:items.map(x=>({
+     productCode:x.code||"",
+     productName:x.name||"",
+     originalProductName:x.name||"",
+     quantity:Number(x.qty)||0,
+     unit:x.unit||"",
+     note:x.note||""
+   }))
+ };
+ const json=JSON.stringify(draft);
+ const encoded=btoa(unescape(encodeURIComponent(json)))
+   .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+ location.href="https://s2525s.github.io/meatflow-liff/?aiOrder="+encodeURIComponent(encoded);
 };
 $("saveSettings").onclick=()=>{localStorage.setItem("meatlink_api_url",$("apiUrl").value.trim());status("設定を保存しました。")};
 $("csvFile").onchange=async e=>{
